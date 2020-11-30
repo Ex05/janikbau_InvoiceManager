@@ -1,0 +1,26 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.9'
+    id 'idea'
+}
+
+group 'nrw.janikbau'
+version '0.1.0-indev'
+
+sourceCompatibility = 15
+
+mainClassName = 'nrw.janikbau.Main'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+javafx{
+    modules = ['javafx.controls', 'javafx.fxml']
+    version = '15.0.1'
+}
