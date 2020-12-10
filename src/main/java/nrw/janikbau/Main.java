@@ -6,21 +6,21 @@ package nrw.janikbau;
 import javafx.application.Application;
 import nrw.janikbau.sfm.SimpleFinancialManager;
 
-public class Main {
-    // <- Public ->
-    // <- Protected ->
-    // <- Private->
-    // <- Static ->
-    // <- Constructor ->
+public class Main{
+	// <- Public ->
+	// <- Protected ->
+	// <- Private->
+	// <- Static ->
+	// <- Constructor ->
 
-    // <- Abstract ->
-    // <- Object ->
-    // <- Getter & Setter ->
+	// <- Abstract ->
+	// <- Object ->
+	// <- Getter & Setter ->
 
-    // <- Static ->
-    public static void main(String[] args) {
-        Application.launch(SimpleFinancialManager.class, args);
-    }
+	// <- Static ->
+	public static void main(String[] args){
+		Application.launch(SimpleFinancialManager.class, args);
+	}
 }
 
 /* Setting up gradle & javaFX video:

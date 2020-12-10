@@ -5,17 +5,17 @@ package nrw.janikbau.sfm.util;
 
 import javafx.scene.image.Image;
 
-/**
- * @author Jan.Marcel.Janik [©2016]
- */
+import java.util.PropertyResourceBundle;
+
 public final class Resources {
     // <- Public ->
     public static Image IMAGE_STAGE_ICON;
 
+    public static PropertyResourceBundle LANGUAGE_FILE;
     // <- Protected ->
     // <- Private->
-    // <- Static ->
 
+    // <- Static ->
     // <- Constructor ->
     private Resources(){
         throw new IllegalStateException("Do not instantiate !~!");
