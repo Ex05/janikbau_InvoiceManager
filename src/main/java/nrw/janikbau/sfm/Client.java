@@ -17,7 +17,7 @@ public class Client{
 
 	private final SimpleStringProperty address;
 
-	private final List<Order> orders;
+	private final List<JobSite> jobSites;
 
 	// <- Static ->
 
@@ -27,19 +27,19 @@ public class Client{
 
 		this.address = new SimpleStringProperty(address);
 
-		orders = new LinkedList<>();
+		jobSites = new LinkedList<>();
 	}
 
 	// <- Abstract ->
 
 	// <- Object ->
-	public void addOrder(final Order order){
-		orders.add(order);
+	public void addOrder(final JobSite jobSite){
+		jobSites.add(jobSite);
 	}
 
 	// <- Getter & Setter ->
-	public List<Order> getOrders(){
-		return orders;
+	public List<JobSite> getOrders(){
+		return jobSites;
 	}
 
 	public String getName(){

@@ -5,7 +5,7 @@ package nrw.janikbau.sfm;
 
 import javafx.beans.property.SimpleStringProperty;
 
-import java.util.Date;
+import java.time.LocalDateTime;
 
 import static nrw.janikbau.sfm.util.Util.HashToString;
 
@@ -20,14 +20,14 @@ public class Invoice{
 
 	private final SimpleStringProperty hashString;
 
-	private final Date creationDate;
+	private final LocalDateTime creationDate;
 
 	private byte[] hash;
 
 	// <- Static ->
 
 	// <- Constructor ->
-	public Invoice(final String fileLocation, final Date creationDate, final byte[] hash, final Invoice previous){
+	public Invoice(final String fileLocation, final LocalDateTime creationDate, final byte[] hash, final Invoice previous){
 		this.creationDate = creationDate;
 
 		this.fileLocation = new SimpleStringProperty();
@@ -43,7 +43,7 @@ public class Invoice{
 	// <- Object ->
 
 	// <- Getter & Setter ->
-	public Date getCreationDate(){
+	public LocalDateTime getCreationDate(){
 		return creationDate;
 	}
 

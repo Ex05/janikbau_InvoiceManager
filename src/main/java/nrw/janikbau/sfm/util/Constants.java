@@ -36,6 +36,11 @@ public final class Constants {
 
     public static final String DIALOG_CHOOSE_INVOICE_LOCATION_TITLE;
 
+    public static final String LOCALE_DATE_TIME_FORMAT_STRING;
+
+    public static final String HASH_FILE_NAME;
+    public static final String INVOICE_FILE_NAME;
+
     public static final Locale LANGUAGE_EN_US;
     public static final Locale LANGUAGE_DE_DE;
 
@@ -69,6 +74,11 @@ public final class Constants {
         DIRECTORY_CHOOSER_INVOICE_LOCATION_TITLE = "directoryChooserInvoiceLocationTitle";
 
         DIALOG_CHOOSE_INVOICE_LOCATION_TITLE = "dialogChooseInvoiceSaveLocationTitle";
+
+        LOCALE_DATE_TIME_FORMAT_STRING = "yyyy_MM_dd_HHmmssSS";
+
+        HASH_FILE_NAME = "hash";
+        INVOICE_FILE_NAME = "invoice";
 
         LANGUAGE_EN_US = new Locale("en", "US");
         LANGUAGE_DE_DE = new Locale("de", "DE");
