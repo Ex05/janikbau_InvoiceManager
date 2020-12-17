@@ -3,12 +3,16 @@ package nrw.janikbau.sfm.controller;
 
 // <- Static_Import ->
 
+import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import nrw.janikbau.sfm.Client;
 import nrw.janikbau.sfm.Invoice;
+import nrw.janikbau.sfm.JobSite;
+import nrw.janikbau.sfm.model.SFM_Model;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,6 +20,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.Math.min;
 import static java.util.Arrays.sort;
@@ -30,6 +36,8 @@ public class SFM_Controller{
 	// <- Protected ->
 
 	// <- Private->
+	private final SFM_Model model;
+
 	@FXML
 	private Button buttonSearch;
 
@@ -51,7 +59,12 @@ public class SFM_Controller{
 	private String invoiceSaveLocation;
 
 	// <- Static ->
+
 	// <- Constructor ->
+	public SFM_Controller(){
+		model = new SFM_Model();
+	}
+
 	// <- Abstract ->
 
 	// <- Object ->
@@ -76,11 +89,45 @@ public class SFM_Controller{
 	void onButtonSearchPressed(final ActionEvent e){
 		log("Searching...");
 
-		// TODO: Search. (Jan - 2020.12.01)
+		new Thread(() -> {
+			final String searchText = textFieldSearchBar.getText();
 
-		log("No Entries Found...");
+			Platform.runLater(() -> {
+				textFieldSearchBar.setText("");
 
-		textFieldSearchBar.setText("");
+				textFieldSearchBar.setDisable(true);
+			});
+
+			Object searchResult = null;
+
+			for(final Client client : model.getClients()){
+				try{
+					Thread.sleep(2_000);
+				}catch(final InterruptedException exception){
+					exception.printStackTrace();
+				}
+
+				if(client.getName().contains(searchText)){
+					searchResult = client;
+
+					break;
+				}else{
+					searchResult = client.getJobSites().stream().filter(jobSite -> jobSite.getDescription().contains(searchText)).findFirst().orElse(null);
+				}
+			}
+
+			if(searchResult != null){
+				final Object finalSearchResult = searchResult;
+
+				if(finalSearchResult instanceof Client){
+					Platform.runLater(() -> log(((Client) finalSearchResult).getName()));
+				}else if(finalSearchResult instanceof JobSite){
+					Platform.runLater(() -> log(((JobSite) finalSearchResult).getDescription()));
+				}
+			}
+
+			Platform.runLater(() -> textFieldSearchBar.setDisable(false));
+		}, "SearchBar").start();
 	}
 
 	public void afterStartup(){
@@ -89,62 +136,94 @@ public class SFM_Controller{
 		final File root = new File(invoiceSaveLocation);
 
 		if(root.exists()){
-			loadClientData(root);
+			final List<Client> clients = loadClientData(root);
+			model.addClients(clients);
+
+			for(final Client client : clients){
+				System.out.println(client.getName());
+
+				for(final JobSite jobSite : client.getJobSites()){
+					System.out.println("\t" + jobSite.getDescription());
+
+					Invoice invoice = jobSite.getInvoice();
+					while(invoice != null){
+						System.out.println("\t\t" + invoice);
+
+						invoice = invoice.getPrevious();
+					}
+				}
+			}
 		}else{
 			new IOException("File:'" + root.getAbsolutePath() + "' does not exist.").printStackTrace();
 
 			// TODO: Show message that we failed to load data from disk. (Jan - 12/12/20)
 		}
-
-		System.exit(0);
 	}
 
 	public void setInvoiceSaveLocation(final String invoiceSaveLocation){
 		this.invoiceSaveLocation = invoiceSaveLocation;
 	}
 
-	private void loadClientData(final File dir){
+	private List<Client> loadClientData(final File dir){
 		final File[] clients = requireNonNull(dir.listFiles(File::isDirectory));
 
-		if(clients.length == 0){
-			System.out.println("No clients");
-		}else{
-			for(final File client : clients){
-				System.out.println(client.getName());
+		List<Client> clientList = null;
 
+		if(clients.length != 0){
+			clientList = new ArrayList<>(clients.length);
+
+			for(final File client : clients){
 				if(client.isDirectory()){
-					loadJobSiteData(client);
+					final Client ret = new Client(client.getName());
+
+					final List<JobSite> jobSites = loadJobSiteData(client);
+					if(jobSites != null){
+						ret.addJobSites(jobSites);
+					}
+
+					clientList.add(ret);
 				}else{
 					// TODO:  (Jan - 12/12/20)
 				}
 			}
 		}
+
+		return clientList;
 	}
 
-	private void loadJobSiteData(final File dir){
+	private List<JobSite> loadJobSiteData(final File dir){
 		final File[] jobSites = requireNonNull(dir.listFiles(File::isDirectory));
 
-		if(jobSites.length == 0){
-			System.out.println("No job sites.");
-		}else{
+		List<JobSite> jobSiteList = null;
+
+		if(jobSites.length != 0){
+			jobSiteList = new ArrayList<>(jobSites.length);
+
 			for(final File jobSite : jobSites){
 				if(jobSite.isDirectory()){
-					System.out.println("\t" + jobSite.getName());
+					final JobSite ret = new JobSite(jobSite.getName());
 
-					loadInvoiceData(jobSite);
+					final Invoice invoice = loadInvoiceData(jobSite);
+					if(invoice != null){
+						ret.setInvoice(invoice);
+					}
+
+					jobSiteList.add(ret);
 				}else{
 					// TODO:  (Jan - 12/12/20)
 				}
 			}
 		}
+
+		return jobSiteList;
 	}
 
-	private void loadInvoiceData(final File dir){
+	private Invoice loadInvoiceData(final File dir){
+		Invoice invoice = null;
+
 		final File[] invoices = dir.listFiles(File::isDirectory);
 
-		if(requireNonNull(invoices).length == 0){
-			System.out.println("No invoices..");
-		}else{
+		if(requireNonNull(invoices).length != 0){
 			sortInvoicesByDate(invoices);
 
 			Invoice previous = null;
@@ -169,14 +248,13 @@ public class SFM_Controller{
 					}
 				}
 
-				final Invoice invoice = new Invoice(fileLocation, creationDate, hash, previous);
-				previous = invoice;
+				invoice = new Invoice(fileLocation, creationDate, hash, previous);
 
-				System.out.println("\t\t" + invoice.getCreationDate().toString());
-				System.out.println("\t\t\t" + invoice.getHashString());
-				System.out.println("\t\t\t" + invoice.getFileLocation());
+				previous = invoice;
 			}
 		}
+
+		return invoice;
 	}
 
 	private void sortInvoicesByDate(final File[] invoices){
@@ -199,25 +277,9 @@ public class SFM_Controller{
 	}
 
 	// <- Getter & Setter ->
+	public SFM_Model getModel(){
+		return model;
+	}
+
 	// <- Static ->
 }
-
-
-
-/*
-			for(final File invoiceDir : invoices){
-				if(invoiceDir.isDirectory()){
-					System.out.println("\t\t" + invoiceDir.getName());
-
-					final File[] invoiceData = invoiceDir.listFiles();
-
-					for(final File file : requireNonNull(invoiceData)){
-						if(file.getName().equals(HASH_FILE_NAME)){
-							System.out.println("\t\t\thash");
-						}else if(file.getName().equals(INVOICE_FILE_NAME)){
-							System.out.println("\t\t\tinvoice");
-						}
-					}
-				}
-			}
-* */

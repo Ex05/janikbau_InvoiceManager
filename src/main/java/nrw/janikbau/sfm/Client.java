@@ -15,17 +15,13 @@ public class Client{
 	// <- Private->
 	private final SimpleStringProperty name;
 
-	private final SimpleStringProperty address;
-
 	private final List<JobSite> jobSites;
 
 	// <- Static ->
 
 	// <- Constructor ->
-	public Client(final String name, final String address){
+	public Client(final String name){
 		this.name = new SimpleStringProperty(name);
-
-		this.address = new SimpleStringProperty(address);
 
 		jobSites = new LinkedList<>();
 	}
@@ -33,12 +29,16 @@ public class Client{
 	// <- Abstract ->
 
 	// <- Object ->
-	public void addOrder(final JobSite jobSite){
+	public void addJobSite(final JobSite jobSite){
 		jobSites.add(jobSite);
 	}
 
+	public void addJobSites(final List<JobSite> jobSites){
+		this.jobSites.addAll(jobSites);
+	}
+
 	// <- Getter & Setter ->
-	public List<JobSite> getOrders(){
+	public List<JobSite> getJobSites(){
 		return jobSites;
 	}
 
@@ -52,18 +52,6 @@ public class Client{
 
 	public void setName(final String name){
 		this.name.set(name);
-	}
-
-	public String getAddress(){
-		return address.get();
-	}
-
-	public SimpleStringProperty addressProperty(){
-		return address;
-	}
-
-	public void setAddress(final String address){
-		this.address.set(address);
 	}
 
 	// <- Static ->

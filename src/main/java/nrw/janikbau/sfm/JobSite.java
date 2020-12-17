@@ -5,9 +5,6 @@ package nrw.janikbau.sfm;
 
 import javafx.beans.property.SimpleStringProperty;
 
-import java.util.LinkedList;
-import java.util.List;
-
 public class JobSite{
 	// <- Public ->
 	// <- Protected ->
@@ -15,31 +12,28 @@ public class JobSite{
 	// <- Private->
 	private final SimpleStringProperty description;
 
-	private final List<Invoice> invoices;
+	private Invoice invoice;
 
 	// <- Static ->
 
 	// <- Constructor ->
-	public JobSite(){
-		description = new SimpleStringProperty();
+	public JobSite(final String description){
+		this.description = new SimpleStringProperty();;
 
-		invoices = new LinkedList<>();
+		setDescription(description);
 	}
 
 	// <- Abstract ->
 
 	// <- Object ->
-	public void addInvoice(final Invoice invoice){
-		invoices.add(invoice);
-	}
-
-	public void removeInvoice(final Invoice invoice){
-		invoices.remove(invoice);
-	}
 
 	// <- Getter & Setter ->
-	public List<Invoice> getInvoices(){
-		return invoices;
+	public Invoice getInvoice(){
+		return invoice;
+	}
+
+	public void setInvoice(final Invoice invoice){
+		this.invoice = invoice;
 	}
 
 	public String getDescription(){
