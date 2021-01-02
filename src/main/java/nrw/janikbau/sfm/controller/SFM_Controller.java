@@ -3,12 +3,18 @@ package nrw.janikbau.sfm.controller;
 
 // <- Static_Import ->
 
-import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.control.Button;
+import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
+import javafx.stage.Stage;
 import nrw.janikbau.sfm.Client;
 import nrw.janikbau.sfm.Invoice;
 import nrw.janikbau.sfm.JobSite;
@@ -18,16 +24,22 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 
 import static java.lang.Math.min;
+import static java.nio.file.Files.createDirectory;
 import static java.util.Arrays.sort;
 import static java.util.Objects.requireNonNull;
-import static nrw.janikbau.sfm.util.Constants.HASH_FILE_NAME;
-import static nrw.janikbau.sfm.util.Constants.INVOICE_FILE_NAME;
+import static javafx.geometry.Pos.CENTER;
+import static javafx.stage.StageStyle.UTILITY;
+import static nrw.janikbau.sfm.util.Constants.*;
+import static nrw.janikbau.sfm.util.Resources.LANGUAGE_FILE;
 import static nrw.janikbau.sfm.util.Util.FormatDate;
 import static nrw.janikbau.sfm.util.Util.HexStringToByteArray;
 
@@ -38,8 +50,7 @@ public class SFM_Controller{
 	// <- Private->
 	private final SFM_Model model;
 
-	@FXML
-	private Button buttonSearch;
+	private final List<Client> currentlyDisplayedClients;
 
 	@FXML
 	private Label labelLogLine;
@@ -56,13 +67,45 @@ public class SFM_Controller{
 	@FXML
 	private TextField textFieldSearchBar;
 
+	@FXML
+	private VBox vBoxClientList;
+
+	@FXML
+	private Label labelAddClient;
+
+	@FXML
+	private Label labelClearSearch;
+
+	@FXML
+	private HBox hBoxSearchClients;
+
+	@FXML
+	private HBox hBoxAddClient;
+
+	private HBox hBoxSelectedClient;
+
+	private Label labelRemoveClient;
+	private Label labelAddJobSite;
+
 	private String invoiceSaveLocation;
+
+	private VBox vBox;
 
 	// <- Static ->
 
 	// <- Constructor ->
 	public SFM_Controller(){
 		model = new SFM_Model();
+
+		currentlyDisplayedClients = new LinkedList<>();
+
+		hBoxSelectedClient = new HBox();
+
+		labelRemoveClient = new Label("[]");
+
+		labelAddJobSite = new Label("+");
+		labelAddJobSite.setFont(Font.font(labelAddJobSite.getFont().getSize() * 2));
+		labelAddJobSite.setOnMouseClicked(this::onLabelAddJobSiteClicked);
 	}
 
 	// <- Abstract ->
@@ -83,56 +126,195 @@ public class SFM_Controller{
 		labelPreviousYear.setText((currentYear - 1) + "");
 		labelCurrentYear.setText(currentYear + "");
 		labelNextYear.setText((currentYear + 1) + "");
+
+		labelClearSearch = new Label("x");
+		labelClearSearch.setOnMouseClicked(event -> {
+			textFieldSearchBar.setText("");
+		});
+
+		textFieldSearchBar.textProperty().addListener((object, oldValue, newValue) -> {
+			System.out.println("newValue = '" + newValue + "'");
+
+			if(newValue.equals("")){
+				hBoxSearchClients.getChildren().remove(labelClearSearch);
+
+				model.getClients().forEach(this::addClientToUI);
+
+				return;
+			}
+
+			if(!hBoxSearchClients.getChildren().contains(labelClearSearch)){
+				hBoxSearchClients.getChildren().add(labelClearSearch);
+			}
+
+			clearClientListUI();
+
+			for(final Client client : model.getClients()){
+				if(client.getName().toLowerCase().contains(newValue.toLowerCase())){
+					addClientToUI(client);
+				}
+			}
+		});
+	}
+
+	private void clearClientListUI(){
+		vBoxClientList.getChildren().clear();
+
+		currentlyDisplayedClients.clear();
+
+		vBoxClientList.getChildren().add(hBoxAddClient);
+	}
+
+	void onLabelAddJobSiteClicked(final MouseEvent event){
+		try{
+			final FXMLLoader loader = new FXMLLoader();
+			loader.setLocation(getClass().getResource(FXML_FILE_LOCATION + DIALOG_ADD_JOB_SITE_FXML_FILE_NAME));
+			loader.setResources(LANGUAGE_FILE);
+
+			final Parent root = loader.load();
+			root.getStylesheets().add(CSS_FILE_LOCATION);
+
+			final Scene scene = new Scene(root, 480, 240);
+			scene.getStylesheets().add(CSS_FILE_LOCATION);
+
+			final Stage stage = new Stage(UTILITY);
+			stage.setTitle(LANGUAGE_FILE.getString(DIALOG_ADD_JOB_SITE_TITLE));
+
+			stage.setScene(scene);
+
+			final AddJobSiteDialogController controller = loader.getController();
+			controller.setClient(model.getselectedClient());
+			controller.setStage(stage);
+
+			stage.showAndWait();
+
+			final String jobSiteDescription = controller.getJobSiteDescription();
+
+			if(jobSiteDescription != null){
+				final JobSite jobSite = new JobSite(jobSiteDescription);
+
+				addJobSiteToUI(jobSite);
+				writeJobSiteToDisk(model.getselectedClient(), jobSite);
+			}
+		}catch(final Exception exception){
+			exception.printStackTrace();
+		}
+	}
+
+	void addJobSiteToUI(final JobSite jobSite){
+		final Label labelJobSite = new Label(jobSite.getDescription());
+		labelJobSite.setTextFill(Color.DARKCYAN);
+		labelJobSite.setFont(Font.font(labelJobSite.getFont().getFamily(), labelJobSite.getFont().getSize() * 1.25));
+
+		vBox.getChildren().add(labelJobSite);
 	}
 
 	@FXML
-	void onButtonSearchPressed(final ActionEvent e){
-		log("Searching...");
+	void onLabelAddClientClicked(final MouseEvent event){
+		try{
+			final FXMLLoader loader = new FXMLLoader();
+			loader.setLocation(getClass().getResource(FXML_FILE_LOCATION + DIALOG_ADD_CLIENT_FXML_FILE_NAME));
+			loader.setResources(LANGUAGE_FILE);
 
-		new Thread(() -> {
-			final String searchText = textFieldSearchBar.getText();
+			final Parent root = loader.load();
+			root.getStylesheets().add(CSS_FILE_LOCATION);
 
-			Platform.runLater(() -> {
-				textFieldSearchBar.setText("");
+			final Scene scene = new Scene(root, 480, 240);
+			scene.getStylesheets().add(CSS_FILE_LOCATION);
 
-				textFieldSearchBar.setDisable(true);
-			});
+			final Stage stage = new Stage(UTILITY);
+			stage.setTitle(LANGUAGE_FILE.getString(DIALOG_ADD_CLIENT_TITLE));
 
-			Object searchResult = null;
+			stage.setScene(scene);
 
-			for(final Client client : model.getClients()){
-				try{
-					Thread.sleep(2_000);
-				}catch(final InterruptedException exception){
-					exception.printStackTrace();
-				}
+			final AddClientDialogController controller = loader.getController();
+			controller.setStage(stage);
+			controller.setModel(model);
 
-				if(client.getName().contains(searchText)){
-					searchResult = client;
+			stage.showAndWait();
 
-					break;
-				}else{
-					searchResult = client.getJobSites().stream().filter(jobSite -> jobSite.getDescription().contains(searchText)).findFirst().orElse(null);
-				}
+			final String clientName = controller.getClientName();
+
+			if(clientName != null){
+				final Client client = new Client(clientName);
+
+				addClientToUI(client);
+				writeClientToDisk(client);
 			}
+		}catch(final Exception exception){
+			exception.printStackTrace();
+		}
+	}
 
-			if(searchResult != null){
-				final Object finalSearchResult = searchResult;
+	private void writeClientToDisk(final Client client) throws IOException{
+		final Path path = Paths.get(invoiceSaveLocation, client.getName());
 
-				if(finalSearchResult instanceof Client){
-					Platform.runLater(() -> log(((Client) finalSearchResult).getName()));
-				}else if(finalSearchResult instanceof JobSite){
-					Platform.runLater(() -> log(((JobSite) finalSearchResult).getDescription()));
-				}
+		createDirectory(path);
+	}
+
+	private void writeJobSiteToDisk(final Client client, final JobSite jobSite) throws IOException{
+		final Path path = Paths.get(invoiceSaveLocation, client.getName(), jobSite.getDescription());
+
+		createDirectory(path);
+	}
+
+	private void addClientToUI(final Client client){
+		if(!currentlyDisplayedClients.contains(client)){
+			final Label clientLabel = new Label(client.getName());
+
+			currentlyDisplayedClients.add(client);
+
+			if(client.equals(model.getselectedClient())){
+				clientLabel.setTextFill(Color.web("#0076a3"));
+				clientLabel.setFont(Font.font(clientLabel.getFont().getFamily(), clientLabel.getFont().getSize() * 2));
+
+				vBox = new VBox();
+				vBox.setAlignment(CENTER);
+
+				hBoxSelectedClient.getChildren().clear();
+
+				hBoxSelectedClient.getChildren().add(clientLabel);
+				hBoxSelectedClient.getChildren().add(labelAddJobSite);
+
+				vBox.getChildren().add(hBoxSelectedClient);
+
+				client.getJobSites().forEach(jobSite -> {
+					final Label labelJobSite = new Label(jobSite.getDescription());
+					labelJobSite.setTextFill(Color.DARKCYAN);
+					labelJobSite.setFont(Font.font(labelJobSite.getFont().getFamily(), labelJobSite.getFont().getSize() * 1.25));
+
+					vBox.getChildren().add(labelJobSite);
+				});
+
+				vBoxClientList.getChildren().add(vBox);
+			}else{
+				clientLabel.setOnMouseClicked(e -> selectClient(client));
+
+				vBoxClientList.getChildren().add(clientLabel);
 			}
+		}
+	}
 
-			Platform.runLater(() -> textFieldSearchBar.setDisable(false));
-		}, "SearchBar").start();
+	private void selectClient(final Client client){
+		if(!client.equals(model.getselectedClient())){
+			model.setSelected(client);
+
+			repaintUI();
+		}
+	}
+
+	private void repaintUI(){
+		final List<Client> buffer = new ArrayList<>(currentlyDisplayedClients.size());
+		buffer.addAll(currentlyDisplayedClients);
+
+		clearClientListUI();
+
+		buffer.forEach(this::addClientToUI);
+
+		currentlyDisplayedClients.addAll(buffer);
 	}
 
 	public void afterStartup(){
-		buttonSearch.requestFocus();
-
 		final File root = new File(invoiceSaveLocation);
 
 		if(root.exists()){
@@ -141,6 +323,8 @@ public class SFM_Controller{
 
 			for(final Client client : clients){
 				System.out.println(client.getName());
+
+				addClientToUI(client);
 
 				for(final JobSite jobSite : client.getJobSites()){
 					System.out.println("\t" + jobSite.getDescription());

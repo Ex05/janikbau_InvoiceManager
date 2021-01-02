@@ -18,6 +18,8 @@ public final class Constants {
 
     public static final String DIALOG_CHOOSE_INVOICE_SAVE_LOCATION_FXML_FILE_NAME;
 
+    public static final String DIALOG_ADD_CLIENT_FXML_FILE_NAME;
+
     public static final String STAGE_ICON_LOCATION;
 
     public static final String LANGUAGE_FILE_LOCATION;
@@ -35,6 +37,12 @@ public final class Constants {
     public static final String DIRECTORY_CHOOSER_INVOICE_LOCATION_TITLE;
 
     public static final String DIALOG_CHOOSE_INVOICE_LOCATION_TITLE;
+
+    public static final String DIALOG_ADD_JOB_SITE_FXML_FILE_NAME;
+
+    public static final String DIALOG_ADD_CLIENT_TITLE;
+
+    public static final String DIALOG_ADD_JOB_SITE_TITLE;
 
     public static final String LOCALE_DATE_TIME_FORMAT_STRING;
 
@@ -55,6 +63,12 @@ public final class Constants {
 
         DIALOG_CHOOSE_INVOICE_SAVE_LOCATION_FXML_FILE_NAME = "chooseInvoiceSaveLocationDialog.fxml";
 
+        DIALOG_ADD_CLIENT_FXML_FILE_NAME = "addClientDialog.fxml";
+
+        DIALOG_ADD_JOB_SITE_FXML_FILE_NAME = "addJobSiteDialog.fxml";
+
+        DIALOG_ADD_JOB_SITE_TITLE = "dialogAddJobSiteTitle";
+
         CSS_FILE_LOCATION = "/res/css/sfm.css";
 
         STAGE_ICON_LOCATION = "./res/img/application_icon.png";
@@ -74,6 +88,8 @@ public final class Constants {
         DIRECTORY_CHOOSER_INVOICE_LOCATION_TITLE = "directoryChooserInvoiceLocationTitle";
 
         DIALOG_CHOOSE_INVOICE_LOCATION_TITLE = "dialogChooseInvoiceSaveLocationTitle";
+
+        DIALOG_ADD_CLIENT_TITLE = "dialogAddClientTitle";
 
         LOCALE_DATE_TIME_FORMAT_STRING = "yyyy_MM_dd_HHmmssSS";
 

@@ -15,6 +15,8 @@ public class SFM_Model{
 	// <- Private->
 	private final List<Client> clients;
 
+	private Client selected = null;
+
 	// <- Static ->
 
 	// <- Constructor ->
@@ -42,6 +44,14 @@ public class SFM_Model{
 	// <- Getter & Setter ->
 	public List<Client> getClients(){
 		return clients;
+	}
+
+	public Client getselectedClient(){
+		return selected;
+	}
+
+	public void setSelected(final Client selected){
+		this.selected = selected;
 	}
 
 	// <- Static ->
