@@ -298,9 +298,10 @@ public class SFM_Controller{
 
 						model.setSelectedJobSite(jobSite);
 
-						final Invoice invoice = model.getSelectedJobSite().getInvoice();
+						Invoice invoice = model.getSelectedJobSite().getInvoice();
 
 						if(invoice != null){
+						do{
 							final VBox vBox = new VBox();
 
 							final Label labelDate = new Label(FormatDate(invoice.getCreationDate()));
@@ -315,7 +316,8 @@ public class SFM_Controller{
 							vBox.getChildren().add(labelHash);
 							vBox.getChildren().add(new Separator());
 
-							vBoxInvoices.getChildren().add(vBox);
+							vBoxInvoices.getChildren().add(0, vBox);
+						}while((invoice = invoice.getPrevious()) != null);
 						}
 					});
 
