@@ -4,6 +4,7 @@ package nrw.janikbau.sfm.model;
 // <- Static_Import ->
 
 import nrw.janikbau.sfm.Client;
+import nrw.janikbau.sfm.JobSite;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +16,9 @@ public class SFM_Model{
 	// <- Private->
 	private final List<Client> clients;
 
-	private Client selected = null;
+	private Client selectedClient = null;
+
+	private JobSite selectedJobSite = null;
 
 	// <- Static ->
 
@@ -46,12 +49,20 @@ public class SFM_Model{
 		return clients;
 	}
 
-	public Client getselectedClient(){
-		return selected;
+	public Client getSelectedClient(){
+		return selectedClient;
 	}
 
-	public void setSelected(final Client selected){
-		this.selected = selected;
+	public void setSelectedClient(final Client selected){
+		this.selectedClient = selected;
+	}
+
+	public JobSite getSelectedJobSite(){
+		return selectedJobSite;
+	}
+
+	public void setSelectedJobSite(final JobSite selectedJobSite){
+		this.selectedJobSite = selectedJobSite;
 	}
 
 	// <- Static ->

@@ -7,13 +7,16 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 import nrw.janikbau.sfm.Client;
 import nrw.janikbau.sfm.Invoice;
@@ -37,6 +40,8 @@ import static java.nio.file.Files.createDirectory;
 import static java.util.Arrays.sort;
 import static java.util.Objects.requireNonNull;
 import static javafx.geometry.Pos.CENTER;
+import static javafx.scene.paint.Color.DARKCYAN;
+import static javafx.scene.paint.Color.DARKRED;
 import static javafx.stage.StageStyle.UTILITY;
 import static nrw.janikbau.sfm.util.Constants.*;
 import static nrw.janikbau.sfm.util.Resources.LANGUAGE_FILE;
@@ -81,6 +86,9 @@ public class SFM_Controller{
 
 	@FXML
 	private HBox hBoxAddClient;
+
+	@FXML
+	private VBox vBoxInvoices;
 
 	private HBox hBoxSelectedClient;
 
@@ -133,8 +141,6 @@ public class SFM_Controller{
 		});
 
 		textFieldSearchBar.textProperty().addListener((object, oldValue, newValue) -> {
-			System.out.println("newValue = '" + newValue + "'");
-
 			if(newValue.equals("")){
 				hBoxSearchClients.getChildren().remove(labelClearSearch);
 
@@ -183,7 +189,7 @@ public class SFM_Controller{
 			stage.setScene(scene);
 
 			final AddJobSiteDialogController controller = loader.getController();
-			controller.setClient(model.getselectedClient());
+			controller.setClient(model.getSelectedClient());
 			controller.setStage(stage);
 
 			stage.showAndWait();
@@ -194,7 +200,7 @@ public class SFM_Controller{
 				final JobSite jobSite = new JobSite(jobSiteDescription);
 
 				addJobSiteToUI(jobSite);
-				writeJobSiteToDisk(model.getselectedClient(), jobSite);
+				writeJobSiteToDisk(model.getSelectedClient(), jobSite);
 			}
 		}catch(final Exception exception){
 			exception.printStackTrace();
@@ -203,7 +209,7 @@ public class SFM_Controller{
 
 	void addJobSiteToUI(final JobSite jobSite){
 		final Label labelJobSite = new Label(jobSite.getDescription());
-		labelJobSite.setTextFill(Color.DARKCYAN);
+		labelJobSite.setTextFill(DARKCYAN);
 		labelJobSite.setFont(Font.font(labelJobSite.getFont().getFamily(), labelJobSite.getFont().getSize() * 1.25));
 
 		vBox.getChildren().add(labelJobSite);
@@ -264,7 +270,7 @@ public class SFM_Controller{
 
 			currentlyDisplayedClients.add(client);
 
-			if(client.equals(model.getselectedClient())){
+			if(client.equals(model.getSelectedClient())){
 				clientLabel.setTextFill(Color.web("#0076a3"));
 				clientLabel.setFont(Font.font(clientLabel.getFont().getFamily(), clientLabel.getFont().getSize() * 2));
 
@@ -280,8 +286,38 @@ public class SFM_Controller{
 
 				client.getJobSites().forEach(jobSite -> {
 					final Label labelJobSite = new Label(jobSite.getDescription());
-					labelJobSite.setTextFill(Color.DARKCYAN);
+					if(jobSite.getInvoice() != null){
+						labelJobSite.setTextFill(DARKCYAN);
+					}else{
+						labelJobSite.setTextFill(DARKRED);
+					}
+
 					labelJobSite.setFont(Font.font(labelJobSite.getFont().getFamily(), labelJobSite.getFont().getSize() * 1.25));
+					labelJobSite.setOnMouseClicked(event -> {
+						vBoxInvoices.getChildren().clear();
+
+						model.setSelectedJobSite(jobSite);
+
+						final Invoice invoice = model.getSelectedJobSite().getInvoice();
+
+						if(invoice != null){
+							final VBox vBox = new VBox();
+
+							final Label labelDate = new Label(FormatDate(invoice.getCreationDate()));
+							labelDate.setFont(Font.font(labelDate.getFont().getFamily(), FontWeight.BOLD, labelDate.getFont().getSize() * 1.2));
+							vBox.getChildren().add(labelDate);
+
+							final Button buttonOpen = new Button("Open");
+							vBox.getChildren().add(buttonOpen);
+
+							final Label labelHash = new Label(invoice.getHashString());
+							labelHash.setFont(Font.font(labelHash.getFont().getFamily(), labelHash.getFont().getSize() * 1.2));
+							vBox.getChildren().add(labelHash);
+							vBox.getChildren().add(new Separator());
+
+							vBoxInvoices.getChildren().add(vBox);
+						}
+					});
 
 					vBox.getChildren().add(labelJobSite);
 				});
@@ -296,8 +332,8 @@ public class SFM_Controller{
 	}
 
 	private void selectClient(final Client client){
-		if(!client.equals(model.getselectedClient())){
-			model.setSelected(client);
+		if(!client.equals(model.getSelectedClient())){
+			model.setSelectedClient(client);
 
 			repaintUI();
 		}
@@ -322,17 +358,11 @@ public class SFM_Controller{
 			model.addClients(clients);
 
 			for(final Client client : clients){
-				System.out.println(client.getName());
-
 				addClientToUI(client);
 
 				for(final JobSite jobSite : client.getJobSites()){
-					System.out.println("\t" + jobSite.getDescription());
-
 					Invoice invoice = jobSite.getInvoice();
 					while(invoice != null){
-						System.out.println("\t\t" + invoice);
-
 						invoice = invoice.getPrevious();
 					}
 				}
