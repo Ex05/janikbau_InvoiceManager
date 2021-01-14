@@ -67,33 +67,3 @@ public class Util{
 		return LocalDateTime.parse(s, DATE_TIME_FORMATTER);
 	}
 }
-
-/*
-		if(files != null){
-			for(final File client : files){
-				if(client.isDirectory()){
-					System.out.printf("Client:'%s'.\n", client.getName());
-
-					final File[] jobSites = client.listFiles();
-
-					if(jobSites != null){
-						for(final File jobSite : jobSites){
-							System.out.printf("\tJobSite:'%s'.\n", jobSite.getName());
-
-							if(jobSite.isDirectory()){
-								final File[] invoiceDirectories = jobSite.listFiles();
-
-								if(invoiceDirectories != null){
-									for(final File invoiceDirectory : invoiceDirectories){
-										if(invoiceDirectory.isDirectory()){
-											System.out.printf("\t\tDir:'%s'.\n", invoiceDirectory.getName());
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-* */

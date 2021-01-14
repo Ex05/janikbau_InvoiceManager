@@ -11,8 +11,10 @@ import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.Separator;
 import javafx.scene.control.TextField;
+import javafx.scene.input.Dragboard;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
@@ -27,11 +29,14 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -40,13 +45,13 @@ import static java.nio.file.Files.createDirectory;
 import static java.util.Arrays.sort;
 import static java.util.Objects.requireNonNull;
 import static javafx.geometry.Pos.CENTER;
+import static javafx.scene.input.TransferMode.COPY_OR_MOVE;
 import static javafx.scene.paint.Color.DARKCYAN;
 import static javafx.scene.paint.Color.DARKRED;
 import static javafx.stage.StageStyle.UTILITY;
 import static nrw.janikbau.sfm.util.Constants.*;
 import static nrw.janikbau.sfm.util.Resources.LANGUAGE_FILE;
-import static nrw.janikbau.sfm.util.Util.FormatDate;
-import static nrw.janikbau.sfm.util.Util.HexStringToByteArray;
+import static nrw.janikbau.sfm.util.Util.*;
 
 public class SFM_Controller{
 	// <- Public ->
@@ -90,7 +95,13 @@ public class SFM_Controller{
 	@FXML
 	private VBox vBoxInvoices;
 
+	@FXML
+	private Pane paneDropTarget;
+
 	private HBox hBoxSelectedClient;
+
+	@FXML
+	private HBox hBoxDropTarget;
 
 	private Label labelRemoveClient;
 	private Label labelAddJobSite;
@@ -161,6 +172,50 @@ public class SFM_Controller{
 				}
 			}
 		});
+
+		hBoxDropTarget.setOnDragOver(dragEvent -> {
+			if(dragEvent.getGestureSource() != hBoxDropTarget && dragEvent.getDragboard().hasFiles()){
+				dragEvent.acceptTransferModes(COPY_OR_MOVE);
+			}
+
+			dragEvent.consume();
+		});
+
+		hBoxDropTarget.setOnDragDropped(dragEvent -> {
+			final Dragboard dragboard = dragEvent.getDragboard();
+
+			if(dragboard.hasFiles()){
+				final JobSite jobSite = model.getSelectedJobSite();
+
+				final List<File> files = dragboard.getFiles();
+
+				if(files.size() != 1){
+					dragEvent.setDropCompleted(false);
+				}else{
+					try{
+						final File invoiceFile = files.get(0);
+
+						final BufferedReader br = new BufferedReader(new FileReader(invoiceFile));
+
+						final byte[] hash = HexStringToByteArray(br.readLine());
+
+						br.close();
+
+						final Invoice invoice = new Invoice(invoiceFile.getAbsolutePath(), LocalDateTime.now(), hash, jobSite.getInvoice());
+
+						jobSite.setInvoice(invoice);
+					}catch(final IOException e){
+						e.printStackTrace();
+					}
+
+					dragEvent.setDropCompleted(true);
+				}
+			}else{
+				dragEvent.setDropCompleted(false);
+			}
+
+			dragEvent.consume();
+		});
 	}
 
 	private void clearClientListUI(){
@@ -169,6 +224,37 @@ public class SFM_Controller{
 		currentlyDisplayedClients.clear();
 
 		vBoxClientList.getChildren().add(hBoxAddClient);
+	}
+
+	private void checkInvoiceIntegrity(){
+		Invoice invoice = model.getSelectedJobSite().getInvoice();
+
+		while(invoice != null){
+			try{
+				final Invoice previous = invoice.getPrevious();
+
+				final byte[] previousHash = previous == null ? new byte[]{} : previous.getHash();
+
+				final byte[] data = Files.readAllBytes(Path.of(invoice.getFileLocation()));
+				final byte[] hashData = new byte[data.length + previousHash.length];
+
+				System.arraycopy(previousHash, 0, hashData, 0, previousHash.length);
+				System.arraycopy(data, 0, hashData, previousHash.length, data.length);
+
+				final byte[] hash = Hash(hashData);
+
+				invoice.setValid(Arrays.equals(hash, invoice.getHash()));
+
+				System.out.println(HashToString(hash));
+				System.out.println(HashToString(invoice.getHash()));
+				System.out.println();
+
+			}catch(final NoSuchAlgorithmException | IOException e){
+				e.printStackTrace();
+			}
+
+			invoice = invoice.getPrevious();
+		}
 	}
 
 	void onLabelAddJobSiteClicked(final MouseEvent event){
@@ -201,6 +287,8 @@ public class SFM_Controller{
 
 				addJobSiteToUI(jobSite);
 				writeJobSiteToDisk(model.getSelectedClient(), jobSite);
+
+				model.getSelectedClient().addJobSite(jobSite);
 			}
 		}catch(final Exception exception){
 			exception.printStackTrace();
@@ -211,6 +299,12 @@ public class SFM_Controller{
 		final Label labelJobSite = new Label(jobSite.getDescription());
 		labelJobSite.setTextFill(DARKCYAN);
 		labelJobSite.setFont(Font.font(labelJobSite.getFont().getFamily(), labelJobSite.getFont().getSize() * 1.25));
+
+		if(jobSite.getInvoice() != null){
+			labelJobSite.setTextFill(DARKCYAN);
+		}else{
+			labelJobSite.setTextFill(DARKRED);
+		}
 
 		vBox.getChildren().add(labelJobSite);
 	}
@@ -294,31 +388,9 @@ public class SFM_Controller{
 
 					labelJobSite.setFont(Font.font(labelJobSite.getFont().getFamily(), labelJobSite.getFont().getSize() * 1.25));
 					labelJobSite.setOnMouseClicked(event -> {
-						vBoxInvoices.getChildren().clear();
-
 						model.setSelectedJobSite(jobSite);
 
-						Invoice invoice = model.getSelectedJobSite().getInvoice();
-
-						if(invoice != null){
-						do{
-							final VBox vBox = new VBox();
-
-							final Label labelDate = new Label(FormatDate(invoice.getCreationDate()));
-							labelDate.setFont(Font.font(labelDate.getFont().getFamily(), FontWeight.BOLD, labelDate.getFont().getSize() * 1.2));
-							vBox.getChildren().add(labelDate);
-
-							final Button buttonOpen = new Button("Open");
-							vBox.getChildren().add(buttonOpen);
-
-							final Label labelHash = new Label(invoice.getHashString());
-							labelHash.setFont(Font.font(labelHash.getFont().getFamily(), labelHash.getFont().getSize() * 1.2));
-							vBox.getChildren().add(labelHash);
-							vBox.getChildren().add(new Separator());
-
-							vBoxInvoices.getChildren().add(0, vBox);
-						}while((invoice = invoice.getPrevious()) != null);
-						}
+						repaintInvoiceUI();
 					});
 
 					vBox.getChildren().add(labelJobSite);
@@ -330,6 +402,37 @@ public class SFM_Controller{
 
 				vBoxClientList.getChildren().add(clientLabel);
 			}
+		}
+	}
+
+	private void repaintInvoiceUI(){
+		checkInvoiceIntegrity();
+
+		vBoxInvoices.getChildren().clear();
+
+		Invoice invoice = model.getSelectedJobSite().getInvoice();
+
+		if(invoice != null){
+			do{
+				final VBox vBox = new VBox();
+				if(!invoice.isValid()){
+					vBox.setStyle("-fx-background-color: #ff3333;");
+				}
+
+				final Label labelDate = new Label(FormatDate(invoice.getCreationDate()));
+				labelDate.setFont(Font.font(labelDate.getFont().getFamily(), FontWeight.BOLD, labelDate.getFont().getSize() * 1.2));
+				vBox.getChildren().add(labelDate);
+
+				final Button buttonOpen = new Button("Open");
+				vBox.getChildren().add(buttonOpen);
+
+				final Label labelHash = new Label(invoice.getHashString());
+				labelHash.setFont(Font.font(labelHash.getFont().getFamily(), labelHash.getFont().getSize() * 1.2));
+				vBox.getChildren().add(labelHash);
+				vBox.getChildren().add(new Separator());
+
+				vBoxInvoices.getChildren().add(0, vBox);
+			}while((invoice = invoice.getPrevious()) != null);
 		}
 	}
 

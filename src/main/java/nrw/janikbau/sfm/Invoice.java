@@ -26,6 +26,8 @@ public class Invoice{
 
 	private byte[] hash;
 
+	private boolean valid;
+
 	// <- Static ->
 
 	// <- Constructor ->
@@ -39,6 +41,8 @@ public class Invoice{
 		setHash(hash);
 
 		this.previous = previous;
+
+		valid = true;
 	}
 
 	// <- Abstract ->
@@ -58,6 +62,14 @@ public class Invoice{
 	}
 
 	// <- Getter & Setter ->
+	public boolean isValid(){
+		return valid;
+	}
+
+	public void setValid(final boolean valid){
+		this.valid = valid;
+	}
+
 	public LocalDateTime getCreationDate(){
 		return creationDate;
 	}
